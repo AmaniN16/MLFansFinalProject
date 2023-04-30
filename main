@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Load the dataset
-df = pd.read_csv('D:/google download/as/train.csv')
+df = pd.read_csv('D:/google download/as/train (version 2).csv')
 
 # Check for missing values
 print(df.isnull().sum())
@@ -16,11 +16,11 @@ print(df.dtypes)
 print(df.describe())
 
 # Data visualization
-sns.histplot(df['max_torque'])
+sns.histplot(df['max_torque (Nm)'])
 plt.title('Distribution of Max Torque')
 plt.show()
 
-sns.scatterplot(x='max_power', y='gross_weight', data=df)
+sns.scatterplot(x='max_power (bhp)', y='gross_weight', data=df)
 plt.title('Max Power vs Gross Weight')
 plt.show()
 
