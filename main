@@ -90,9 +90,14 @@ models = [
 for name, model in models:
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
+
+    # Save the predictions to a CSV file
+    prediction_df = test_df.copy()
+    prediction_df['predicted_claim'] = y_pred
+    prediction_df.to_csv(f"{name}_predictions.csv", index=False)
+
     accuracy = accuracy_score(y_test, y_pred)
     cm = confusion_matrix(y_test, y_pred)
     print(f"{name} Accuracy: {accuracy}")
     print(f"{name} Confusion Matrix:\n {cm}")
     print(classification_report(y_test, y_pred, zero_division=1))
-
