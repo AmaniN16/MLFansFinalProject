@@ -1,10 +1,24 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import seaborn as sns
-
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler, OrdinalEncoder
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.naive_bayes import GaussianNB
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.decomposition import PCA
 # Load the dataset
+
+
 df = pd.read_csv('D:/google download/as/train (version 2).csv')
+
+# Split the dataset into training and testing sets
+train_df, test_df = train_test_split(df, test_size=0.3, random_state=42)
 
 # Check for missing values
 print(df.isnull().sum())
@@ -35,33 +49,50 @@ sns.heatmap(corr_matrix, annot=True, cmap='coolwarm')
 plt.title('Correlation Matrix')
 plt.show()
 
-# Feature selection
-from sklearn.decomposition import PCA
-pca = PCA(n_components=5)
-pca.fit(df_numeric)
-print(pca.explained_variance_ratio_)
+cat_attribs = ['area_cluster', 'segment', 'model', 'fuel_type', 'engine_type', 'transmission_type',
+              'rear_brakes_type', 'steering_type', 'is_speed_alert']
 
-# Data preprocessing
-from sklearn.preprocessing import StandardScaler
-scaler = StandardScaler()
-df_scaled = scaler.fit_transform(df_numeric)
+num_attribs = ['policy_tenure', 'age_of_car', 'age_of_policyholder', 'population_density', 'make',
+               'max_torque (Nm)', 'rpm_max_torque', 'rpm_max_power', 'max_power (bhp)', 'airbags',
+              'displacement', 'cylinder', 'gear_box', 'turning_radius', 'length', 'width', 'height', 'gross_weight',
+              'is_esc', 'is_adjustable_steering', 'is_tpms', 'is_parking_sensors', 'is_parking_camera',
+              'is_front_fog_lights', 'is_rear_window_wiper', 'is_rear_window_washer', 'is_rear_window_defogger',
+              'is_brake_assist', 'is_power_door_locks', 'is_central_locking', 'is_power_steering', 'is_driver_seat_height_adjustable',
+              'is_day_night_rear_view_mirror', 'is_ecw', 'ncap_rating']
 
-# Train and test the model
-# Split the data into training and testing sets
-from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(df_scaled, df['is_claim'], test_size=0.3, random_state=42)
+int_encoder = OrdinalEncoder()
 
-# Train a logistic regression model
-from sklearn.linear_model import LogisticRegression
-lr = LogisticRegression()
-lr.fit(X_train, y_train)
 
-# Test the model on the testing set
-y_pred = lr.predict(X_test)
+num_pipeline = Pipeline([
+    ('mm_scaler', MinMaxScaler()),
+    ('pca', PCA(n_components=5))  # Feature extraction: adjust the number of components
+])
 
-# Evaluate the model's performance
-from sklearn.metrics import accuracy_score, confusion_matrix
-accuracy = accuracy_score(y_test, y_pred)
-cm = confusion_matrix(y_test, y_pred)
-print('Accuracy:', accuracy)
-print('Confusion matrix:', cm)
+full_pipeline = ColumnTransformer([
+    ('num', num_pipeline, num_attribs),
+    ('cat', int_encoder, cat_attribs)
+])
+
+
+X_train = full_pipeline.fit_transform(train_df.drop(['is_claim'], axis=1))
+y_train = train_df['is_claim']
+X_test = full_pipeline.transform(test_df.drop(['is_claim'], axis=1))
+y_test = test_df['is_claim']
+
+# Train and test the models
+models = [
+    ('Logistic Regression', LogisticRegression(max_iter=5000)),
+    ('Support Vector Machine', SVC()),
+    ('Naive Bayes', GaussianNB()),
+    ('Random Forest', RandomForestClassifier())
+]
+
+for name, model in models:
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    cm = confusion_matrix(y_test, y_pred)
+    print(f"{name} Accuracy: {accuracy}")
+    print(f"{name} Confusion Matrix:\n {cm}")
+    print(classification_report(y_test, y_pred, zero_division=1))
+
